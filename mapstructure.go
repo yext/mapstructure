@@ -740,19 +740,37 @@ func (d *Decoder) decodeStruct(name string, data interface{}, val reflect.Value)
 		rawMapKey := reflect.ValueOf(fieldName)
 		rawMapVal := dataVal.MapIndex(rawMapKey)
 		if !rawMapVal.IsValid() {
-			// Do a slower search by iterating over each key and
-			// doing case-insensitive search.
-			for dataValKey := range dataValKeys {
-				mK, ok := dataValKey.Interface().(string)
-				if !ok {
-					// Not a string key
-					continue
+			// dot notated, search through data by walking down the map
+			if fieldMapKeys := strings.Split(fieldName, "."); len(fieldMapKeys) > 1 {
+				curData := dataVal
+				for i, key := range fieldMapKeys {
+					if i == len(fieldMapKeys)-1 {
+						rawMapKey = reflect.ValueOf(key)
+						rawMapVal = curData.MapIndex(rawMapKey)
+						break
+					}
+					curData = reflect.Indirect(curData.MapIndex(reflect.ValueOf(key)))
+					if curDataMap, ok := curData.Interface().(map[string]interface{}); ok {
+						curData = reflect.ValueOf(curDataMap)
+					} else {
+						break
+					}
 				}
+			} else {
+				// Do a slower search by iterating over each key and
+				// doing case-insensitive search.
+				for dataValKey := range dataValKeys {
+					mK, ok := dataValKey.Interface().(string)
+					if !ok {
+						// Not a string key
+						continue
+					}
 
-				if strings.EqualFold(mK, fieldName) {
-					rawMapKey = dataValKey
-					rawMapVal = dataVal.MapIndex(dataValKey)
-					break
+					if strings.EqualFold(mK, fieldName) {
+						rawMapKey = dataValKey
+						rawMapVal = dataVal.MapIndex(dataValKey)
+						break
+					}
 				}
 			}
 

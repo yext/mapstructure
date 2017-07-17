@@ -94,6 +94,11 @@ type Tagged struct {
 	Value string `mapstructure:"foo"`
 }
 
+type DotNotationTag struct {
+	Vfoo string `mapstructure:"bar.what.what"`
+	Vbar []string `mapstructure:"foo.bar"`
+}
+
 type TypeConversionResult struct {
 	IntToFloat         float32
 	IntToUint          uint
@@ -1193,6 +1198,35 @@ func TestWeakDecode(t *testing.T) {
 		t.Fatalf("bad: %#v", result)
 	}
 	if result.Bar != "value" {
+		t.Fatalf("bad: %#v", result)
+	}
+}
+
+func TestDotNotationTag(t *testing.T) {
+	t.Parallel()
+
+	input := map[string]interface{}{
+		"foo": map[string]interface{}{
+			"bar": []string{"value"},
+		},
+		"bar": map[string]interface{}{
+			"what": map[string]interface{}{
+				"what": "value",
+			},
+		},
+	}
+
+	var result DotNotationTag
+	err := Decode(input, &result)
+	if err != nil {
+		t.Fatalf("error: %s", err)
+	}
+
+	if !reflect.DeepEqual([]string{"value"}, result.Vbar) {
+		t.Fatalf("bad: %#v", result)
+	}
+
+	if result.Vfoo != "value" {
 		t.Fatalf("bad: %#v", result)
 	}
 }
