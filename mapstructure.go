@@ -750,6 +750,9 @@ func (d *Decoder) decodeStruct(name string, data interface{}, val reflect.Value)
 						break
 					}
 					curData = reflect.Indirect(curData.MapIndex(reflect.ValueOf(key)))
+					if !curData.IsValid() {
+						break
+					}
 					if curDataMap, ok := curData.Interface().(map[string]interface{}); ok {
 						curData = reflect.ValueOf(curDataMap)
 					} else {
